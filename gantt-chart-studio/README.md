@@ -34,7 +34,7 @@ A desktop application for creating, editing, and exporting professional Gantt ch
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/gantt-chart-studio.git
+git clone https://github.com/vinayanand3/gantt-chart-studio.git
 cd gantt-chart-studio
 
 # Install dependencies
