@@ -1,5 +1,7 @@
 # Gantt Chart Studio
 
+Try it here: https://vinayanand3.github.io/gantt-chart-studio/
+
 A desktop application for creating, editing, and exporting professional Gantt charts — built with Python and Mermaid.js. No internet connection required after install.
 
 ![Gantt Chart Studio](gantt-chart-studio/screenshot.png)
