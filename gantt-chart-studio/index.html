@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gantt Chart Studio</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        /* ===== APPLE DESIGN SYSTEM ===== */
+        :root {
+            --blue:        #007AFF;
+            --blue-dark:   #0051D5;
+            --green:       #34C759;
+            --red:         #FF3B30;
+            --orange:      #FF9500;
+            --purple:      #AF52DE;
+            --gray:        #8E8E93;
+            --gray-2:      #AEAEB2;
+            --gray-3:      #C7C7CC;
+            --gray-4:      #D1D1D6;
+            --gray-5:      #E5E5EA;
+            --gray-6:      #F2F2F7;
+
+            --bg:          #F5F5F7;
+            --surface:     #FFFFFF;
+            --sidebar:     #FAFAFA;
+
+            --text:        #1D1D1F;
+            --text-2:      #6E6E73;
+            --text-3:      #AEAEB2;
+
+            --sep:         rgba(0, 0, 0, 0.08);
+            --border:      rgba(0, 0, 0, 0.12);
+
+            --shadow-1:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-2:    0 4px 14px rgba(0,0,0,0.09), 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-3:    0 10px 40px rgba(0,0,0,0.14);
+
+            --r-sm:  6px;
+            --r-md:  10px;
+            --r-lg:  14px;
+
+            --gui-w:  364px;
+            --code-w: 334px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            height: 52px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--sep);
+            padding: 0 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 100;
+            position: relative;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .brand-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(145deg, #007AFF 0%, #5856D6 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.32);
+            flex-shrink: 0;
+        }
+        .brand-name {
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .toolbar-sep {
+            width: 1px;
+            height: 18px;
+            background: var(--sep);
+            margin: 0 4px;
+        }
+
+        /* ===== BUTTONS ===== */
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            -webkit-font-smoothing: antialiased;
+            transition: filter 0.12s ease, background 0.12s ease, transform 0.08s ease;
+        }
+        button:active { transform: scale(0.97); }
+
+        .btn {
+            padding: 6px 13px;
+            border-radius: var(--r-sm);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: -0.1px;
+        }
+        .btn-primary  { background: var(--blue);  color: #fff; }
+        .btn-primary:hover  { background: var(--blue-dark); }
+        .btn-secondary { background: var(--gray-5); color: var(--text); }
+        .btn-secondary:hover { background: var(--gray-4); }
+        .btn-success  { background: var(--green); color: #fff; }
+        .btn-success:hover  { filter: brightness(0.9); }
+        .btn-danger   { background: var(--red);   color: #fff; }
+        .btn-danger:hover   { filter: brightness(0.9); }
+        .btn-ghost    { background: transparent; color: var(--blue); padding: 5px 8px; border-radius: var(--r-sm); }
+        .btn-ghost:hover { background: rgba(0, 122, 255, 0.09); }
+
+        .btn-icon {
+            width: 28px; height: 28px; padding: 0;
+            border-radius: var(--r-sm);
+            background: var(--gray-5);
+            color: var(--text-2);
+            font-size: 15px;
+            font-weight: 400;
+        }
+        .btn-icon:hover { background: var(--gray-4); }
+        .btn-icon.active { background: rgba(0,122,255,0.12); color: var(--blue); }
+
+        .btn-xs  { padding: 3px 8px;  font-size: 11px; border-radius: 5px; }
+        .btn-sm  { padding: 5px 10px; font-size: 12px; }
+        .btn-full { width: 100%; }
+
+        /* ===== MAIN LAYOUT ===== */
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ===== PANES ===== */
+        .pane {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--surface);
+            flex-shrink: 0;
+            overflow: hidden;
+            transition:
+                width    0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity  0.18s ease;
+        }
+        #gui-pane  { width: var(--gui-w);  min-width: var(--gui-w);  background: var(--sidebar); }
+        #code-pane { width: var(--code-w); min-width: var(--code-w); }
+        .pane.collapsed {
+            width: 0 !important;
+            min-width: 0 !important;
+            opacity: 0;
+        }
+
+        /* ===== RESIZE HANDLES ===== */
+        .resize-handle {
+            width: 4px;
+            flex-shrink: 0;
+            cursor: col-resize;
+            background: var(--sep);
+            position: relative;
+            z-index: 20;
+            transition: background 0.15s ease;
+            /* widen the interactive hit area without changing visual width */
+        }
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            left: -4px; right: -4px;
+        }
+        .resize-handle:hover { background: rgba(0, 122, 255, 0.35); }
+        .resize-handle.dragging { background: rgba(0, 122, 255, 0.6); }
+        .resize-handle.hidden { display: none; }
+
+        #preview-pane {
+            flex: 1;
+            overflow: hidden;
+            padding: 18px;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .pane-header {
+            height: 42px;
+            padding: 0 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--sep);
+            flex-shrink: 0;
+        }
+        .pane-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .pane-controls { display: flex; gap: 5px; align-items: center; }
+
+        /* ===== GUI EDITOR ===== */
+        #gui-editor {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        /* Card (settings + sections) */
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-1);
+            overflow: hidden;
+        }
+        .card-head {
+            padding: 9px 12px;
+            background: var(--gray-6);
+            border-bottom: 1px solid var(--sep);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .card-chevron { transition: transform 0.2s ease; }
+        .card-body { padding: 12px; }
+
+        /* Section items */
+        .section-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            margin-bottom: 9px;
+            box-shadow: var(--shadow-1);
+            overflow: hidden;
+            transition: box-shadow 0.18s ease;
+        }
+        .section-item:hover { box-shadow: var(--shadow-2); }
+
+        .section-head {
+            padding: 9px 12px;
+            background: var(--gray-6);
+            border-bottom: 1px solid var(--sep);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .section-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            color: var(--text);
+            padding: 2px 4px;
+            border-radius: 4px;
+            min-width: 0;
+        }
+        .section-name:focus {
+            background: white;
+            outline: 2px solid var(--blue);
+            outline-offset: -1px;
+        }
+        .section-name::placeholder { color: var(--text-3); }
+
+        /* Task items */
+        .task-item { border-bottom: 1px solid var(--sep); }
+        .task-item:last-child { border-bottom: none; }
+
+        .task-row {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+        .task-row:hover { background: rgba(0, 122, 255, 0.04); }
+        .task-row.active { background: rgba(0, 122, 255, 0.07); }
+
+        .task-label {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .badge-wrap { flex-shrink: 0; }
+
+        .task-chevron {
+            font-size: 9px;
+            color: var(--text-3);
+            flex-shrink: 0;
+            display: inline-block;
+            transition: transform 0.18s ease;
+        }
+        .task-chevron.open { transform: rotate(180deg); }
+
+        .task-detail {
+            padding: 12px;
+            background: white;
+            border-top: 1px solid var(--sep);
+            display: none;
+        }
+        .task-detail.active { display: block; }
+
+        /* Section footer */
+        .section-footer { padding: 7px 10px; }
+
+        /* Group label */
+        .group-label {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin: 2px 0 8px 2px;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .fgroup { margin-bottom: 9px; }
+        .fgroup:last-child { margin-bottom: 0; }
+        .flabel {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 500;
+            color: var(--text-2);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .finput, .fselect {
+            width: 100%;
+            padding: 6px 9px;
+            border: 1px solid var(--gray-4);
+            border-radius: var(--r-sm);
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            transition: border-color 0.13s, box-shadow 0.13s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .finput:focus, .fselect:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.14);
+            outline: none;
+        }
+        .finput::placeholder { color: var(--text-3); }
+
+        /* Custom select arrow */
+        .fselect {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238E8E93'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 9px center;
+            padding-right: 26px;
+        }
+
+        .frow { display: flex; gap: 8px; }
+        .frow .fgroup { flex: 1; }
+
+        /* Toggle Switch */
+        .ftoggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .ftoggle-label { font-size: 13px; color: var(--text); cursor: pointer; user-select: none; }
+
+        .switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .switch-track {
+            position: absolute;
+            inset: 0;
+            background: var(--gray-4);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.18s ease;
+        }
+        .switch-track::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 2px;
+            top: 2px;
+            background: white;
+            border-radius: 8px;
+            transition: transform 0.18s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        }
+        .switch input:checked + .switch-track { background: var(--blue); }
+        .switch input:checked + .switch-track::after { transform: translateX(16px); }
+
+        /* ===== BADGES ===== */
+        .badge {
+            font-size: 9.5px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 8px;
+            letter-spacing: 0.2px;
+        }
+        .b-active    { background: rgba(0,122,255,0.12);   color: #007AFF; }
+        .b-done      { background: rgba(52,199,89,0.12);   color: #28A745; }
+        .b-crit      { background: rgba(255,59,48,0.12);   color: #FF3B30; }
+        .b-milestone { background: rgba(175,82,222,0.12);  color: #AF52DE; }
+
+        /* ===== CODE EDITOR ===== */
+        #mermaid-code-editor {
+            flex: 1;
+            width: 100%;
+            border: none;
+            padding: 14px 16px;
+            font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 12.5px;
+            line-height: 1.65;
+            resize: none;
+            outline: none;
+            background: #1E1E2E;
+            color: #CDD6F4;
+            tab-size: 4;
+        }
+
+        /* ===== PREVIEW PANE ===== */
+        .preview-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .panel-toggles {
+            display: flex;
+            gap: 3px;
+            background: rgba(255,255,255,0.85);
+            padding: 3px;
+            border-radius: var(--r-sm);
+            border: 1px solid var(--border);
+        }
+        .panel-toggles button {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11.5px;
+            font-weight: 500;
+            background: transparent;
+            color: var(--text-2);
+        }
+        .panel-toggles button.active {
+            background: white;
+            color: var(--text);
+            box-shadow: var(--shadow-1);
+        }
+        .panel-toggles button:hover:not(.active) { background: rgba(0,0,0,0.05); }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(255,255,255,0.85);
+            padding: 3px;
+            border-radius: var(--r-sm);
+            border: 1px solid var(--border);
+        }
+        .zoom-controls button {
+            width: 24px; height: 24px;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--text-2);
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .zoom-controls button:hover { background: rgba(0,0,0,0.07); }
+        .zoom-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-2);
+            min-width: 36px;
+            text-align: center;
+        }
+
+        .preview-card {
+            flex: 1;
+            background: white;
+            border-radius: var(--r-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-2);
+            overflow: auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        #mermaid-render {
+            min-width: 400px;
+            width: 100%;
+        }
+
+        .render-error {
+            color: var(--red);
+            background: rgba(255, 59, 48, 0.06);
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: var(--r-md);
+            padding: 12px 16px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            white-space: pre-wrap;
+            max-width: 100%;
+        }
+
+        /* ===== TOASTS ===== */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .toast {
+            background: rgba(28, 28, 30, 0.93);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: white;
+            padding: 9px 15px;
+            border-radius: var(--r-md);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-3);
+            max-width: 300px;
+            pointer-events: auto;
+        }
+        .toast.visible { opacity: 1; transform: none; }
+        .toast-icon-success { color: #30D158; }
+        .toast-icon-error   { color: #FF453A; }
+        .toast-icon-info    { color: #64D2FF; }
+
+        /* ===== SCROLLBARS ===== */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--gray-3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gray-2); }
+
+        /* Flatpickr overrides */
+        .flatpickr-input { background: white !important; }
+
+        /* ===== WATERMARK ===== */
+        .watermark {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-3);
+            letter-spacing: 0.2px;
+            pointer-events: none;
+            user-select: none;
+            z-index: 200;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== HEADER ===== -->
+    <header>
+        <div class="brand">
+            <div class="brand-icon">📊</div>
+            <span class="brand-name">Gantt Chart Studio</span>
+        </div>
+        <div class="toolbar">
+            <button class="btn btn-secondary btn-sm" onclick="saveProject()" title="Save project as JSON">💾 Save</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadProject()" title="Load project from JSON">📂 Load</button>
+            <div class="toolbar-sep"></div>
+            <button class="btn btn-secondary btn-sm" onclick="exportAs('svg')" title="Export chart as SVG">↗ SVG</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportAs('png')" title="Export chart as PNG">↗ PNG</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportMermaid()" title="Export Mermaid code">↗ .mmd</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- ===== GUI PANE ===== -->
+        <div id="gui-pane" class="pane">
+            <div class="pane-header">
+                <span class="pane-label">Editor</span>
+                <div class="pane-controls">
+                    <button class="btn btn-success btn-xs" onclick="updateCodeFromGui(true)" title="Sync GUI changes to code editor">↑ Sync</button>
+                    <button class="btn-icon" id="gui-collapse-btn" onclick="togglePane('gui')" title="Collapse editor">‹</button>
+                </div>
+            </div>
+            <div id="gui-editor">
+                <!-- Chart Settings Card -->
+                <div class="card">
+                    <div class="card-head" onclick="toggleCard(this)">
+                        <span>Chart Settings</span>
+                        <span class="card-chevron">▾</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="fgroup">
+                            <label class="flabel">Title</label>
+                            <input class="finput" id="chart-title" type="text"
+                                   value="A Professional Gantt Chart"
+                                   oninput="updateCodeFromGui()"
+                                   placeholder="Chart title…">
+                        </div>
+                        <div class="frow">
+                            <div class="fgroup">
+                                <label class="flabel">Date Format</label>
+                                <select class="fselect" id="date-format" onchange="updateCodeFromGui()">
+                                    <option value="YYYY-MM-DD" selected>YYYY-MM-DD</option>
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    <option value="D MMM YYYY">D MMM YYYY</option>
+                                </select>
+                            </div>
+                            <div class="fgroup">
+                                <label class="flabel">Axis Format</label>
+                                <select class="fselect" id="axis-format" onchange="updateCodeFromGui()">
+                                    <option value="%b %d">Jan 15 — Month Day</option>
+                                    <option value="%d %b">15 Jan — Day Month</option>
+                                    <option value="%m/%d">01/15 — MM/DD</option>
+                                    <option value="%d/%m">15/01 — DD/MM</option>
+                                    <option value="%m/%y" selected>01/26 — MM/YY</option>
+                                    <option value="%b %Y">Jan 2026 — Month Year</option>
+                                    <option value="%Y-%m-%d">2026-01-15 — Full ISO</option>
+                                    <option value="%d %b %Y">15 Jan 2026 — Full</option>
+                                    <option value="%b">Jan — Month only</option>
+                                    <option value="%Y">2026 — Year only</option>
+                                    <option value="%W">Wk 03 — Week number</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="fgroup">
+                            <label class="flabel">Font Size</label>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <input type="range" id="chart-font-size" min="10" max="24" value="11" step="1"
+                                       style="flex:1; accent-color:#007AFF;" oninput="
+                                           document.getElementById('font-size-val').textContent = this.value + 'px';
+                                           renderMermaid();
+                                       ">
+                                <span id="font-size-val" style="font-size:12px; color:#555; min-width:30px;">11px</span>
+                            </div>
+                        </div>
+                        <div class="fgroup">
+                            <label class="flabel">Theme</label>
+                            <select class="fselect" id="chart-theme" onchange="renderMermaid()">
+                                <option value="default" selected>Default</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="dark">Dark</option>
+                                <option value="forest">Forest</option>
+                                <option value="base">Base</option>
+                            </select>
+                        </div>
+                        <div class="ftoggle">
+                            <span class="ftoggle-label">Exclude Weekends</span>
+                            <label class="switch">
+                                <input type="checkbox" id="exclude-weekends" onchange="updateCodeFromGui()">
+                                <span class="switch-track"></span>
+                            </label>
+                        </div>
+                        <div class="ftoggle">
+                            <span class="ftoggle-label">Show Today Marker</span>
+                            <label class="switch">
+                                <input type="checkbox" id="today-marker" checked onchange="updateCodeFromGui()">
+                                <span class="switch-track"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sections -->
+                <div class="group-label">Sections &amp; Tasks</div>
+                <div id="sections-container"></div>
+                <button class="btn btn-secondary btn-full" style="margin-top: 2px;" onclick="addSection()">
+                    + Add Section
+                </button>
+            </div>
+        </div>
+
+        <!-- Resize handle: GUI ↔ Code -->
+        <div class="resize-handle" id="gui-handle"></div>
+
+        <!-- ===== CODE PANE ===== -->
+        <div id="code-pane" class="pane collapsed">
+            <div class="pane-header">
+                <span class="pane-label">Mermaid Code</span>
+                <div class="pane-controls">
+                    <button class="btn btn-secondary btn-xs" onclick="parseCodeToGui()" title="Parse code into GUI editor">↓ Parse</button>
+                    <button class="btn-icon" id="code-collapse-btn" onclick="togglePane('code')" title="Collapse code">›</button>
+                </div>
+            </div>
+            <textarea id="mermaid-code-editor" spellcheck="false" oninput="onCodeChange()"></textarea>
+        </div>
+
+        <!-- Resize handle: Code ↔ Preview (hidden because code starts collapsed) -->
+        <div class="resize-handle hidden" id="code-handle"></div>
+
+        <!-- ===== PREVIEW PANE ===== -->
+        <div id="preview-pane">
+            <div class="preview-topbar">
+                <div class="panel-toggles">
+                    <button id="btn-toggle-gui"  class="active" onclick="togglePane('gui')"  title="Toggle editor pane">Editor</button>
+                    <button id="btn-toggle-code" onclick="togglePane('code')" title="Toggle code pane">Code</button>
+                </div>
+                <div class="zoom-controls">
+                    <button onclick="zoomChart(-10)" title="Zoom out">−</button>
+                    <span class="zoom-label" id="zoom-label">100%</span>
+                    <button onclick="zoomChart(10)"  title="Zoom in">+</button>
+                    <button onclick="resetZoom()"    title="Reset zoom" style="font-size:11px; width:auto; padding:0 6px;">Reset</button>
+                </div>
+            </div>
+            <div class="preview-card">
+                <div id="mermaid-render" class="mermaid"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toasts -->
+    <div id="toast-container"></div>
+
+    <!-- Watermark -->
+    <div class="watermark">Created by Vinay Bhaskarla</div>
+
+    <!-- Hidden file input for browser-fallback load -->
+    <input type="file" id="load-file-input" accept=".json" style="display:none"
+           onchange="handleFileLoad(event)">
+
+    <script>
+    // ================================================================
+    // STATE
+    // ================================================================
+    let mermaidCode = `gantt
+    title Automotive Engineering Program Timeline
+    dateFormat  YYYY-MM-DD
+    axisFormat %m/%y
+    %% excludes weekends
+    %% tickInterval 1month
+    section Program Definition
+    Program Kickoff                :milestone, m1, 2026-03-01, 5d
+    Requirements Definition        :a1, after m1, 5d
+    System Architecture            :a2, after a1, 6d
+    section Design Development
+    CAD Concept Design             :b1, after a2, 8d
+    Detailed CAD Development       :b2, after b1, 10d
+    Design Review Gate             :milestone, m2, after b2, 1d
+    Design Iteration               :b3, after m2, 6d
+    Design Freeze                  :milestone, m3, after b3, 1d
+    section Risk & Quality
+    DFMEA Preparation              :c1, 2026-03-10, 5d
+    DFMEA Workshop                 :c2, after c1, 3d
+    DFMEA Actions                  :c3, after c2, 5d
+    Risk Closure Gate              :milestone, m4, after c3, 1d
+    section Validation Planning
+    DVP Planning                   :d1, after m3, 5d
+    Test Fixture Development       :d2, after d1, 6d
+    Test Readiness Review          :milestone, m5, after d2, 1d
+    section Validation & Testing
+    DV Testing Cycle               :e1, after m5, 7d
+    Issue Resolution               :e2, after e1, 5d
+    DV Retest                      :e3, after e2, 5d
+    Validation Complete            :milestone, m6, after e3, 1d
+    section Manufacturing Readiness
+    Tooling Development            :f1, 2026-04-10, 10d
+    Pilot Production               :f2, after f1, 6d
+    Production Readiness Review    :milestone, m7, after f2, 1d
+    Start of Production (SOP)      :milestone, m8, after m7, 1d`;
+
+    let zoomLevel   = 100;
+    let guiOpen     = true;
+    let codeOpen    = true;
+    let svgNaturalW = 0;
+    let svgNaturalH = 0;
+
+    // ================================================================
+    // INIT
+    // ================================================================
+    mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+
+    window.onload = () => {
+        document.getElementById('mermaid-code-editor').value = mermaidCode;
+        parseCodeToGui();
+        // Code pane starts collapsed — sync JS state to match the HTML
+        codeOpen = false;
+        renderMermaid();
+        // Wire up drag-to-resize handles
+        initResizeHandles();
+    };
+
+    // ================================================================
+    // TOAST NOTIFICATIONS
+    // ================================================================
+    function showToast(message, type = 'success') {
+        const icons = { success: '✓', error: '✕', info: 'ℹ' };
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<span class="toast-icon-${type}">${icons[type] || '•'}</span>${escHtml(message)}`;
+        container.appendChild(toast);
+        requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('visible')));
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 280);
+        }, 3200);
+    }
+
+    // ================================================================
+    // PANE TOGGLES
+    // ================================================================
+    function togglePane(paneId) {
+        const pane = document.getElementById(paneId + '-pane');
+        const isNowCollapsed = pane.classList.toggle('collapsed');
+
+        if (paneId === 'gui') {
+            guiOpen = !isNowCollapsed;
+            document.getElementById('btn-toggle-gui')?.classList.toggle('active', guiOpen);
+            document.getElementById('gui-collapse-btn').textContent = guiOpen ? '‹' : '›';
+            document.getElementById('gui-handle')?.classList.toggle('hidden', !guiOpen);
+        } else if (paneId === 'code') {
+            codeOpen = !isNowCollapsed;
+            document.getElementById('btn-toggle-code')?.classList.toggle('active', codeOpen);
+            document.getElementById('code-collapse-btn').textContent = codeOpen ? '‹' : '›';
+            document.getElementById('code-handle')?.classList.toggle('hidden', !codeOpen);
+        }
+        // Re-render after the CSS transition (220ms) so the SVG fills the new width
+        setTimeout(() => renderMermaid(), 260);
+    }
+
+    // ================================================================
+    // CARD ACCORDION (Chart Settings)
+    // ================================================================
+    function toggleCard(headEl) {
+        const body    = headEl.nextElementSibling;
+        const chevron = headEl.querySelector('.card-chevron');
+        const hidden  = body.style.display === 'none';
+        body.style.display    = hidden ? 'block' : 'none';
+        chevron.style.transform = hidden ? '' : 'rotate(-90deg)';
+    }
+
+    // ================================================================
+    // API BRIDGE  (returns null when pywebview is not available)
+    // ================================================================
+    async function callApi(method, ...args) {
+        if (window.pywebview?.api) {
+            const api = window.pywebview.api;
+            const fn  = api[method]
+                     ?? api[method.replace(/_([a-z])/g, (_, c) => c.toUpperCase())];
+            if (typeof fn === 'function') {
+                try { return await fn(...args); } catch { return null; }
+            }
+        }
+        return null; // signal: use browser fallback
+    }
+
+    function downloadText(content, filename, mime = 'text/plain') {
+        const a = document.createElement('a');
+        a.href     = URL.createObjectURL(new Blob([content], { type: mime }));
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
+    function downloadDataUrl(dataUrl, filename) {
+        const a = document.createElement('a');
+        a.href     = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // ================================================================
+    // MERMAID RENDERING
+    // ================================================================
+    async function renderMermaid() {
+        const theme    = document.getElementById('chart-theme')?.value || 'default';
+        const fontSize = parseInt(document.getElementById('chart-font-size')?.value || '11', 10);
+        mermaid.initialize({
+            startOnLoad: false, theme, securityLevel: 'loose',
+            gantt: { fontSize }
+        });
+
+        const el = document.getElementById('mermaid-render');
+        el.innerHTML = mermaidCode;
+        el.removeAttribute('data-processed');
+
+        try {
+            await mermaid.run({ nodes: [el] });
+            // Capture natural SVG size then apply current zoom level
+            const svg = el.querySelector('svg');
+            if (svg) {
+                // Clear any previous zoom so we measure the true natural size
+                svg.style.width  = '';
+                svg.style.height = '';
+                const rect = svg.getBoundingClientRect();
+                svgNaturalW = rect.width;
+                svgNaturalH = rect.height;
+                applyZoom(svg);
+            }
+        } catch (e) {
+            el.innerHTML = `<div class="render-error">Render error:\n${String(e.message || e)}</div>`;
+        }
+    }
+
+    function onCodeChange() {
+        mermaidCode = document.getElementById('mermaid-code-editor').value;
+        renderMermaid();
+    }
+
+    // ================================================================
+    // ZOOM  (scale via SVG width/height — avoids CSS zoom transform issues)
+    // ================================================================
+    function applyZoom(svg) {
+        svg = svg || document.querySelector('#mermaid-render svg');
+        if (!svg || !svgNaturalW) return;
+        const scale = zoomLevel / 100;
+        svg.style.width  = (svgNaturalW * scale) + 'px';
+        svg.style.height = (svgNaturalH * scale) + 'px';
+    }
+
+    // Returns a cloned SVG with all CSS transforms converted to native SVG transform
+    // attributes and key visual properties inlined. Excel (and most standalone SVG
+    // renderers) ignore CSS transform in inline styles — they only read the SVG
+    // transform attribute, so we must convert.
+    function prepareSvgForExport(svgEl) {
+        const clone    = svgEl.cloneNode(true);
+        const origEls  = Array.from(svgEl.querySelectorAll('*'));
+        const cloneEls = Array.from(clone.querySelectorAll('*'));
+
+        const VISUAL_PROPS = [
+            'fill', 'fill-opacity',
+            'stroke', 'stroke-width', 'stroke-opacity',
+            'opacity', 'visibility',
+            'font-family', 'font-size', 'font-weight', 'font-style',
+            'text-anchor', 'dominant-baseline',
+        ];
+
+        origEls.forEach((orig, i) => {
+            const cloneEl = cloneEls[i];
+            const cs = window.getComputedStyle(orig);
+
+            // ── CSS transform → SVG transform attribute ──────────────────────
+            // Excel ignores CSS transform even when inlined as a style; it only
+            // reads the native SVG transform attribute. We convert the CSS matrix
+            // to an SVG attribute, rotating around the element's geometric centre
+            // (getBBox centre = the 50% 50% default transform-origin Mermaid uses).
+            const cssTransform = cs.getPropertyValue('transform');
+            if (cssTransform && cssTransform !== 'none') {
+                try {
+                    const bbox = orig.getBBox(); // always in SVG user units
+                    // Centre of bounding box — matches CSS default transform-origin: 50% 50%
+                    const cx = bbox.x + bbox.width  / 2;
+                    const cy = bbox.y + bbox.height / 2;
+
+                    // Combine with any existing SVG transform (e.g. Mermaid's translate)
+                    const existing = cloneEl.getAttribute('transform') || '';
+                    cloneEl.setAttribute(
+                        'transform',
+                        `${existing} translate(${cx},${cy}) ${cssTransform} translate(${-cx},${-cy})`.trim()
+                    );
+                } catch (_) { /* getBBox fails on non-rendered elements; skip */ }
+            }
+
+            // ── Inline visual properties ──────────────────────────────────────
+            let extra = '';
+            for (const prop of VISUAL_PROPS) {
+                const val = cs.getPropertyValue(prop);
+                if (val && val !== 'none' && val !== '' && val !== '0px') {
+                    extra += `${prop}:${val};`;
+                }
+            }
+            if (extra) {
+                const existing = cloneEl.getAttribute('style') || '';
+                cloneEl.setAttribute('style', existing + extra);
+            }
+        });
+
+        // Explicit width/height so Excel sizes the canvas correctly on import
+        const rect = svgEl.getBoundingClientRect();
+        clone.setAttribute('width',  rect.width  || svgNaturalW);
+        clone.setAttribute('height', rect.height || svgNaturalH);
+
+        return clone;
+    }
+
+    function zoomChart(delta) {
+        zoomLevel = Math.max(40, Math.min(200, zoomLevel + delta));
+        document.getElementById('zoom-label').textContent = `${zoomLevel}%`;
+        applyZoom();
+    }
+
+    function resetZoom() {
+        zoomLevel = 100;
+        document.getElementById('zoom-label').textContent = '100%';
+        applyZoom();
+    }
+
+    // ================================================================
+    // PARSE CODE → GUI
+    // ================================================================
+    function parseCodeToGui() {
+        const container = document.getElementById('sections-container');
+        container.innerHTML = '';
+
+        const lines = mermaidCode.split('\n');
+        let currentSection = null;
+
+        lines.forEach(line => {
+            const t = line.trim();
+            if (!t) return;
+
+            if (t.startsWith('title ')) {
+                const el = document.getElementById('chart-title');
+                if (el) el.value = t.slice(6).trim();
+            } else if (t.startsWith('dateFormat')) {
+                const el = document.getElementById('date-format');
+                if (el) el.value = t.replace(/^dateFormat\s+/, '').trim();
+            } else if (t.startsWith('axisFormat')) {
+                const el = document.getElementById('axis-format');
+                if (el) el.value = t.replace(/^axisFormat\s+/, '').trim();
+            } else if (t === 'excludes weekends') {
+                const el = document.getElementById('exclude-weekends');
+                if (el) el.checked = true;
+            } else if (t.startsWith('todayMarker')) {
+                const el = document.getElementById('today-marker');
+                if (el) el.checked = !t.includes('off');
+            } else if (t.startsWith('section ')) {
+                currentSection = createSectionEl(t.slice(8).trim());
+                container.appendChild(currentSection);
+            } else if (currentSection && !t.startsWith('gantt') && !t.startsWith('%%')) {
+                const colonIdx = t.indexOf(':');
+                if (colonIdx > -1) {
+                    const taskName    = t.slice(0, colonIdx).trim();
+                    const taskDetails = t.slice(colonIdx + 1).trim();
+                    addTaskEl(currentSection, taskName, taskDetails);
+                }
+            }
+        });
+    }
+
+    // ================================================================
+    // CREATE SECTION ELEMENT
+    // ================================================================
+    function createSectionEl(name) {
+        const div = document.createElement('div');
+        div.className = 'section-item';
+        div.innerHTML = `
+            <div class="section-head">
+                <input type="text" class="section-name" value="${escHtml(name)}"
+                       oninput="updateCodeFromGui()" placeholder="Section name">
+                <button class="btn btn-danger btn-xs"
+                        onclick="this.closest('.section-item').remove(); updateCodeFromGui();"
+                        title="Remove section">×</button>
+            </div>
+            <div class="task-list"></div>
+            <div class="section-footer">
+                <button class="btn btn-secondary btn-full btn-xs"
+                        onclick="addTaskEl(this.closest('.section-item'), 'New Task', '2026-03-18, 10d'); updateCodeFromGui();">
+                    + Add Task
+                </button>
+            </div>`;
+        return div;
+    }
+
+    // ================================================================
+    // CREATE TASK ELEMENT
+    // ================================================================
+    function addTaskEl(sectionDiv, name, detailsStr) {
+        const list = sectionDiv.querySelector('.task-list');
+        const { tags, id, start, duration } = parseTaskDetails(detailsStr);
+
+        const taskId  = `t-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const badgeHtml = tags.length
+            ? `<span class="badge b-${tags[0]}">${tags[0].toUpperCase()}</span>`
+            : '';
+
+        const div = document.createElement('div');
+        div.className = 'task-item';
+        div.innerHTML = `
+            <div class="task-row" onclick="toggleTask('${taskId}', this)">
+                <span class="task-label">${escHtml(name)}</span>
+                <span class="badge-wrap">${badgeHtml}</span>
+                <span class="task-chevron">▾</span>
+            </div>
+            <div id="${taskId}" class="task-detail">
+                <div class="fgroup">
+                    <label class="flabel">Task Name</label>
+                    <input class="finput task-name" type="text" value="${escHtml(name)}"
+                           oninput="syncTaskLabel(this); updateCodeFromGui()">
+                </div>
+                <div class="frow">
+                    <div class="fgroup">
+                        <label class="flabel">Status</label>
+                        <select class="fselect task-type" onchange="syncTaskBadge(this); updateCodeFromGui()">
+                            <option value=""          ${tags.length === 0         ? 'selected' : ''}>Normal</option>
+                            <option value="active"    ${tags.includes('active')   ? 'selected' : ''}>Active</option>
+                            <option value="done"      ${tags.includes('done')     ? 'selected' : ''}>Done</option>
+                            <option value="crit"      ${tags.includes('crit')     ? 'selected' : ''}>Critical</option>
+                            <option value="milestone" ${tags.includes('milestone')? 'selected' : ''}>Milestone</option>
+                        </select>
+                    </div>
+                    <div class="fgroup">
+                        <label class="flabel">Task ID</label>
+                        <input class="finput task-id" type="text" value="${escHtml(id)}"
+                               oninput="updateCodeFromGui()" placeholder="e.g. a1">
+                    </div>
+                </div>
+                <div class="frow">
+                    <div class="fgroup">
+                        <label class="flabel">Start / Dependency</label>
+                        <input class="finput datepicker task-start" type="text" value="${escHtml(start)}"
+                               placeholder="Date or 'after a1'">
+                    </div>
+                    <div class="fgroup">
+                        <label class="flabel">Duration</label>
+                        <input class="finput task-duration" type="text" value="${escHtml(duration)}"
+                               oninput="updateCodeFromGui()" placeholder="e.g. 10d">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                    <button class="btn btn-danger btn-xs"
+                            onclick="this.closest('.task-item').remove(); updateCodeFromGui();">
+                        Delete Task
+                    </button>
+                </div>
+            </div>`;
+        list.appendChild(div);
+
+        // Date picker on the start field — also allows free text like "after a1".
+        // Track what the user types; on close, restore the raw value if Flatpickr
+        // cleared it because it wasn't a valid date.
+        const startInput = div.querySelector('.datepicker');
+        let lastRaw = startInput.value;
+        startInput.addEventListener('input', () => { lastRaw = startInput.value; });
+
+        flatpickr(startInput, {
+            dateFormat: 'Y-m-d',
+            allowInput: true,
+            onChange: (dates, dateStr) => {
+                if (dateStr) lastRaw = dateStr;
+                updateCodeFromGui();
+            },
+            onClose: (dates) => {
+                // Flatpickr clears the field when it can't parse the value.
+                // If nothing was selected and we had typed text, put it back.
+                if (dates.length === 0 && lastRaw) {
+                    setTimeout(() => {
+                        startInput.value = lastRaw;
+                        updateCodeFromGui();
+                    }, 0);
+                }
+            }
+        });
+    }
+
+    // ================================================================
+    // PARSE TASK DETAIL STRING
+    // ================================================================
+    function parseTaskDetails(str) {
+        const parts   = str.split(',').map(p => p.trim());
+        const TAGS    = ['active', 'done', 'crit', 'milestone'];
+        const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+        const DUR_RE  = /^\d+[smhdwy]$/;
+        const AFTER   = /^after\s+\S+/;
+
+        let tags = [], id = '', start = '', duration = '';
+
+        parts.forEach(p => {
+            if (TAGS.includes(p))      tags.push(p);
+            else if (AFTER.test(p))    start = p;
+            else if (DATE_RE.test(p)) { if (!start) start = p; else duration = p; }
+            else if (DUR_RE.test(p))   duration = p;
+            else if (p)                id = p;
+        });
+
+        return { tags, id, start, duration };
+    }
+
+    // ================================================================
+    // TASK ACCORDION
+    // ================================================================
+    function toggleTask(taskId, rowEl) {
+        const detail  = document.getElementById(taskId);
+        const isOpen  = detail.classList.contains('active');
+        const section = detail.closest('.section-item');
+
+        // Close all tasks in this section
+        section.querySelectorAll('.task-detail').forEach(d => d.classList.remove('active'));
+        section.querySelectorAll('.task-row').forEach(r => {
+            r.classList.remove('active');
+            r.querySelector('.task-chevron')?.classList.remove('open');
+        });
+
+        if (!isOpen) {
+            detail.classList.add('active');
+            rowEl.classList.add('active');
+            rowEl.querySelector('.task-chevron')?.classList.add('open');
+        }
+    }
+
+    function syncTaskLabel(input) {
+        const label = input.closest('.task-item')?.querySelector('.task-label');
+        if (label) label.textContent = input.value;
+    }
+
+    function syncTaskBadge(select) {
+        const wrap = select.closest('.task-item')?.querySelector('.badge-wrap');
+        if (!wrap) return;
+        const type = select.value;
+        wrap.innerHTML = type
+            ? `<span class="badge b-${type}">${type.toUpperCase()}</span>`
+            : '';
+    }
+
+    function addSection() {
+        const container = document.getElementById('sections-container');
+        container.appendChild(createSectionEl('New Section'));
+        updateCodeFromGui();
+    }
+
+    // ================================================================
+    // UPDATE CODE FROM GUI  (the canonical code generator)
+    // ================================================================
+    function updateCodeFromGui(showFeedback = false) {
+        const title          = document.getElementById('chart-title')?.value       ?? '';
+        const dateFormat     = document.getElementById('date-format')?.value       ?? 'YYYY-MM-DD';
+        const axisFormat     = document.getElementById('axis-format')?.value       ?? '';
+        const excludeWeekends = document.getElementById('exclude-weekends')?.checked;
+        const todayMarker    = document.getElementById('today-marker')?.checked;
+
+        let code = 'gantt\n';
+        if (title)        code += `    title ${title}\n`;
+        code              += `    dateFormat  ${dateFormat}\n`;
+        if (axisFormat)   code += `    axisFormat  ${axisFormat}\n`;
+        if (excludeWeekends) code += `    excludes weekends\n`;
+        if (!todayMarker) code += `    todayMarker off\n`;
+
+        document.querySelectorAll('.section-item').forEach(section => {
+            const sName = section.querySelector('.section-name')?.value ?? 'Section';
+            code += `    section ${sName}\n`;
+
+            section.querySelectorAll('.task-item').forEach(task => {
+                const tName  = task.querySelector('.task-name')?.value?.trim()     ?? 'Task';
+                const tType  = task.querySelector('.task-type')?.value             ?? '';
+                const tId    = task.querySelector('.task-id')?.value?.trim()       ?? '';
+                const tStart = task.querySelector('.task-start')?.value?.trim()    ?? '';
+                const tDur   = task.querySelector('.task-duration')?.value?.trim() ?? '';
+
+                const parts = [tType, tId, tStart, tDur].filter(Boolean);
+                code += `    ${tName.padEnd(22)} :${parts.join(', ')}\n`;
+            });
+        });
+
+        mermaidCode = code;
+        document.getElementById('mermaid-code-editor').value = code;
+        renderMermaid();
+
+        if (showFeedback) showToast('Synced to code editor', 'success');
+    }
+
+    // ================================================================
+    // SAVE / LOAD
+    // ================================================================
+    async function saveProject() {
+        const data = {
+            name:         document.getElementById('chart-title')?.value ?? 'Untitled',
+            mermaid_code: mermaidCode,
+            version:      '2.0'
+        };
+
+        const result = await callApi('save_project', data);
+
+        if (result === null) {
+            // Browser fallback: download JSON
+            downloadText(JSON.stringify(data, null, 2),
+                         `${(data.name || 'gantt-project').replace(/\s+/g, '_')}.json`,
+                         'application/json');
+            showToast('Project downloaded as JSON', 'success');
+        } else if (result.status === 'success')   showToast('Project saved!', 'success');
+        else if (result.status === 'cancelled')    { /* user cancelled — no toast */ }
+        else                                       showToast('Save failed: ' + result.message, 'error');
+    }
+
+    async function loadProject() {
+        const result = await callApi('load_project');
+
+        if (result === null) {
+            // Browser fallback: file picker
+            document.getElementById('load-file-input').click();
+        } else if (result.status === 'success') {
+            applyProjectData(result.data);
+            showToast('Project loaded!', 'success');
+        } else if (result.status === 'cancelled') { /* user cancelled */ }
+        else showToast('Load failed: ' + result.message, 'error');
+    }
+
+    function handleFileLoad(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                applyProjectData(data);
+                showToast('Project loaded!', 'success');
+            } catch {
+                showToast('Invalid project file — could not parse JSON', 'error');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // allow re-loading same file
+    }
+
+    function applyProjectData(data) {
+        if (!data?.mermaid_code) return;
+        mermaidCode = data.mermaid_code;
+        document.getElementById('mermaid-code-editor').value = mermaidCode;
+        // Reset checkboxes before parsing so stale state doesn't persist
+        document.getElementById('exclude-weekends').checked = false;
+        document.getElementById('today-marker').checked     = true;
+        parseCodeToGui();
+        renderMermaid();
+    }
+
+    // ================================================================
+    // EXPORT
+    // ================================================================
+    async function exportAs(format) {
+        const svgEl = document.querySelector('#mermaid-render svg');
+        if (!svgEl) {
+            showToast('No chart to export — please check for render errors', 'error');
+            return;
+        }
+
+        const exportSvg = prepareSvgForExport(svgEl);
+        const svgData   = new XMLSerializer().serializeToString(exportSvg);
+
+        if (format === 'svg') {
+            const b64     = btoa(unescape(encodeURIComponent(svgData)));
+            const dataUrl = `data:image/svg+xml;base64,${b64}`;
+            const result  = await callApi('export_image', dataUrl, 'svg');
+
+            if (result === null) {
+                downloadDataUrl(dataUrl, 'gantt-chart.svg');
+                showToast('SVG downloaded!', 'success');
+            } else if (result.status === 'success')  showToast('SVG exported!', 'success');
+            else if (result.status === 'cancelled')  { /* user cancelled */ }
+            else showToast('SVG export failed: ' + result.message, 'error');
+
+        } else if (format === 'png') {
+            try {
+                const SCALE   = 2; // 2× for retina quality
+                const rect    = svgEl.getBoundingClientRect();
+                const w       = Math.max(rect.width,  800);
+                const h       = Math.max(rect.height, 400);
+                const canvas  = document.createElement('canvas');
+                canvas.width  = w * SCALE + 80;
+                canvas.height = h * SCALE + 80;
+
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                const url  = URL.createObjectURL(blob);
+                const img  = new Image();
+
+                img.onload = async () => {
+                    ctx.drawImage(img, 40, 40, w * SCALE, h * SCALE);
+                    URL.revokeObjectURL(url);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const result  = await callApi('export_image', dataUrl, 'png');
+
+                    if (result === null) {
+                        downloadDataUrl(dataUrl, 'gantt-chart.png');
+                        showToast('PNG downloaded!', 'success');
+                    } else if (result.status === 'success')  showToast('PNG exported!', 'success');
+                    else if (result.status === 'cancelled')  { /* user cancelled */ }
+                    else showToast('PNG export failed: ' + result.message, 'error');
+                };
+                img.onerror = () => showToast('PNG export failed — could not load SVG image', 'error');
+                img.src = url;
+
+            } catch (e) {
+                showToast('PNG export error: ' + e.message, 'error');
+            }
+        }
+    }
+
+    async function exportMermaid() {
+        mermaidCode = document.getElementById('mermaid-code-editor').value;
+        const result = await callApi('export_mermaid', mermaidCode);
+
+        if (result === null) {
+            downloadText(mermaidCode, 'gantt-chart.mmd', 'text/plain');
+            showToast('Mermaid file downloaded!', 'success');
+        } else if (result.status === 'success')  showToast('Mermaid code exported!', 'success');
+        else if (result.status === 'cancelled')  { /* user cancelled */ }
+        else showToast('Export failed: ' + result.message, 'error');
+    }
+
+    // ================================================================
+    // DRAG-TO-RESIZE PANES
+    // ================================================================
+    function initResizeHandles() {
+        setupHandle('gui-handle',  'gui-pane',  200, 620);
+        setupHandle('code-handle', 'code-pane', 180, 560);
+    }
+
+    function setupHandle(handleId, paneId, minW, maxW) {
+        const handle = document.getElementById(handleId);
+        const pane   = document.getElementById(paneId);
+        if (!handle || !pane) return;
+
+        let startX, startW;
+
+        handle.addEventListener('mousedown', e => {
+            e.preventDefault();
+            startX = e.clientX;
+            startW = pane.getBoundingClientRect().width;
+            handle.classList.add('dragging');
+            // Disable pane transition during drag for smooth feel
+            pane.style.transition = 'none';
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+
+            function onMove(e) {
+                const newW = Math.max(minW, Math.min(maxW, startW + (e.clientX - startX)));
+                pane.style.width    = newW + 'px';
+                pane.style.minWidth = newW + 'px';
+            }
+
+            function onUp() {
+                handle.classList.remove('dragging');
+                pane.style.transition = '';
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                // Re-render so SVG fills the updated preview width
+                renderMermaid();
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+
+    // ================================================================
+    // UTILITIES
+    // ================================================================
+    function escHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+    </script>
+</body>
+</html>
