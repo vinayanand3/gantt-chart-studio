@@ -986,10 +986,37 @@
         const origEls  = Array.from(svgEl.querySelectorAll('*'));
         const cloneEls = Array.from(clone.querySelectorAll('*'));
 
+        // ── Embed document-level Mermaid CSS into the SVG ──────────────────
+        // Mermaid injects some styles (tick lines, grid, labels) into document
+        // <head> rather than the SVG's own <style> block. These don't survive
+        // standalone export. Collect and embed them, stripping the '.mermaid'
+        // and '#mermaid-render' parent selectors so they work standalone.
+        let docCss = '';
+        for (const sheet of document.styleSheets) {
+            try {
+                for (const rule of sheet.cssRules) {
+                    if (/\.tick|\.grid|\.task|\.label|\.section|\.milestone|gantt|mermaid/i.test(rule.cssText)) {
+                        docCss += rule.cssText
+                            .replace(/\.mermaid\s+/g, '')
+                            .replace(/#mermaid-render\s+/g, '') + '\n';
+                    }
+                }
+            } catch (_) { /* cross-origin sheet — skip */ }
+        }
+        if (docCss) {
+            const s = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+            s.textContent = docCss;
+            clone.insertBefore(s, clone.firstChild);
+        }
+
+        // Include 'color' so that SVG elements using stroke="currentColor" resolve
+        // correctly in standalone context (currentColor inherits from color).
+        // Include 'fill' with 'none' allowed so paths that need fill:none don't
+        // default to black when class-based CSS is absent.
         const VISUAL_PROPS = [
             'fill', 'fill-opacity',
             'stroke', 'stroke-width', 'stroke-opacity',
-            'opacity', 'visibility',
+            'opacity', 'visibility', 'color',
             'font-family', 'font-size', 'font-weight', 'font-style',
             'text-anchor', 'dominant-baseline',
         ];
@@ -1003,19 +1030,25 @@
             // reads the native SVG transform attribute. We convert the CSS matrix
             // to an SVG attribute, rotating around the element's geometric centre
             // (getBBox centre = the 50% 50% default transform-origin Mermaid uses).
+            //
+            // IMPORTANT: Only apply this when the element has NO existing SVG
+            // transform attribute. If the element already has a native transform
+            // (e.g. .tick groups with translate(x,0)), the CSS computed transform
+            // merely mirrors that attribute — applying it again would double the
+            // translation and break grid line positions.
+            // Milestone rects use CSS-only rotation (no SVG transform attr), so
+            // they correctly get their rotation converted here.
             const cssTransform = cs.getPropertyValue('transform');
-            if (cssTransform && cssTransform !== 'none') {
+            if (cssTransform && cssTransform !== 'none' && !orig.getAttribute('transform')) {
                 try {
                     const bbox = orig.getBBox(); // always in SVG user units
                     // Centre of bounding box — matches CSS default transform-origin: 50% 50%
                     const cx = bbox.x + bbox.width  / 2;
                     const cy = bbox.y + bbox.height / 2;
 
-                    // Combine with any existing SVG transform (e.g. Mermaid's translate)
-                    const existing = cloneEl.getAttribute('transform') || '';
                     cloneEl.setAttribute(
                         'transform',
-                        `${existing} translate(${cx},${cy}) ${cssTransform} translate(${-cx},${-cy})`.trim()
+                        `translate(${cx},${cy}) ${cssTransform} translate(${-cx},${-cy})`
                     );
                 } catch (_) { /* getBBox fails on non-rendered elements; skip */ }
             }
@@ -1024,7 +1057,12 @@
             let extra = '';
             for (const prop of VISUAL_PROPS) {
                 const val = cs.getPropertyValue(prop);
-                if (val && val !== 'none' && val !== '' && val !== '0px') {
+                // For 'fill' we also inline 'none' explicitly — without it, elements
+                // whose fill is only set via CSS class (e.g. <path class="domain">)
+                // default to black fill in standalone SVG context.
+                const skip = !val || val === '' || val === '0px' ||
+                             (val === 'none' && prop !== 'fill');
+                if (!skip) {
                     extra += `${prop}:${val};`;
                 }
             }
@@ -1032,6 +1070,16 @@
                 const existing = cloneEl.getAttribute('style') || '';
                 cloneEl.setAttribute('style', existing + extra);
             }
+        });
+
+        // ── Move grid and today-marker to end so they render on top ─────────
+        // In the live SVG, Mermaid draws .grid before section/task groups.
+        // In standalone SVG (or canvas), the z-order is strictly document order,
+        // so grid lines get covered by section backgrounds. Moving .grid and
+        // .today to the end ensures they paint on top of everything else.
+        ['g.grid', 'g.today'].forEach(sel => {
+            const el = clone.querySelector(sel);
+            if (el) clone.appendChild(el); // moves to end (appendChild re-parents)
         });
 
         // Explicit width/height so Excel sizes the canvas correctly on import
